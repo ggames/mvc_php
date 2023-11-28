@@ -16,7 +16,7 @@ class HomeController extends Controller
 
         //return $contactModel->delete(5);
         return $contactModel->update(4,[
-            "name"  => "Carlos Vega",
+            "name"  => "Carlos Vega 7",
             "email" => "juanfernandez@gmail.com",
             "phone" => "45677878",
         ]);

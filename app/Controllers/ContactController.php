@@ -10,7 +10,10 @@ class ContactController extends Controller {
 
         $model = new Contact();
 
-        $contacts = $model->all();
+        $contacts = $model->paginate(3);
+
+        return $contacts;
+        //$contacts = $model->all();
 
         return  $this->view('contacts.index', compact('contacts'));
     }
@@ -29,30 +32,46 @@ class ContactController extends Controller {
 
         $model->create($data);
 
-        header('Location: /contacts');
+        //header('Location: /contacts');
+        $this->redirect('/contacts');
 
-
-        return 'Aqui se procesa el formulario de contactos';
     }
 
     public function show($id) {
 
-        return " Aqui se mostrará el contacto con id: {$id} ";
+        $model = new Contact();
+        $contact = $model->find($id);
+
+        return $this->view('contacts.show', compact('contact'));
     }
 
     public function edit($id) {
 
-        return "Aquí se mostrará el formulario para editar un contacto";
+        $model = new Contact();
+        $contact = $model->find($id);
+
+        return $this->view('contacts.edit', compact('contact'));
+
     }
 
     public function update($id) {
+        
+        $data = $_POST;
 
-        return "Aquí se procesará el formulario de edicion del contacto con id: {$id}";      
+        $model = new Contact;
+
+        $model->update($id, $data);
+
+        $this->redirect("/contacts/{$id}");      
     }
 
     public function destroy($id) {
+       
+        $model = new Contact();
 
-        return "Aquí se procesará la petición de eliminar el contacto con id: {$id}";
+        $model->delete($id);
+
+        $this->redirect("/contacts");
     }
 
 }

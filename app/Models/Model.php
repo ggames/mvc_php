@@ -36,8 +36,8 @@ class Model
     {
         if ($data) {
 
-            if($params == null){
-                $params = str_repeat('s',count($data));
+            if ($params == null) {
+                $params = str_repeat('s', count($data));
             }
 
             $stmt = $this->connection->prepare($sql);
@@ -64,6 +64,15 @@ class Model
         return $this->query->fetch_all(MYSQLI_ASSOC);
     }
 
+    public function paginate($count = 15){
+
+        $page = isset($_GET['page'])? $_GET['page']: 1;
+
+        $sql = "SELECT * FROM {$this->table} LIMIT " . ($page -1) * $count .",{$count}";
+
+        return $this->query($sql)->get();
+    }
+
     // Consultas
 
     public function all()
@@ -80,7 +89,7 @@ class Model
 
         $sql = "SELECT * FROM {$this->table} WHERE id = ?";
 
-        return $this->query($sql,[$id],'i')->first();
+        return $this->query($sql, [$id], 'i')->first();
     }
 
     public function where($column, $operator, $value = null)
@@ -96,8 +105,8 @@ class Model
 
         $sql = "SELECT * FROM {$this->table} WHERE {$column} {$operator} ?";
 
-        $this->query($sql,[$value], 's');
-        
+        $this->query($sql, [$value], 's');
+
         return $this;
     }
 
@@ -110,7 +119,7 @@ class Model
 
         $values = array_values($data);
 
-        $sql = "INSERT INTO {$this->table} ({$columns}) VALUES (" .str_repeat('?, ', count($values) -1).  "?)";
+        $sql = "INSERT INTO {$this->table} ({$columns}) VALUES (" . str_repeat('?, ', count($values) - 1) .  "?)";
 
         $this->query($sql, $values);
 
@@ -125,17 +134,18 @@ class Model
         $fields = [];
 
         foreach ($data as $key => $value) {
-            $fields[] = "{$key} = ? ";
+            $fields[] = "{$key} = ?";
         }
 
         $fields = implode(", ", $fields);
 
+        $sql = "UPDATE {$this->table} SET {$fields} WHERE id = ?";
+
         $values = array_values($data);
         $values[] = $id;
 
-        $sql = "UPDATE {$this->table} SET {$fields} WHERE id = ?";
 
-        $this->query($sql,$values);
+        $this->query($sql, $values);
 
         return $this->find($id);
     }
@@ -145,6 +155,6 @@ class Model
         // DELETE FROM contacts WHERE id = 1
         $sql = "DELETE FROM {$this->table} WHERE id = ?";
 
-        $this->query($sql,[$id],'i');
+        $this->query($sql, [$id], 'i');
     }
 }
