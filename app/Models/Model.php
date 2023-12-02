@@ -15,6 +15,11 @@ class Model
     protected $connection;
     protected $query;
     protected $table;
+    protected $orderBy = '';
+
+    protected $select = '*';
+    protected $where,  $values = [];
+    protected $sql, $data = [], $params = null;
 
     public function __construct()
     {
@@ -53,24 +58,130 @@ class Model
         return $this;
     }
 
+    public function where($column, $operator, $value = null)
+    {
+
+        if ($value == null) {
+
+            $value = $operator;
+            $operator = '=';
+        }
+
+        if (empty($this->sql)) {
+            $this->sql = "SELECT SQL_CALC_FOUND_ROWS * FROM {$this->table} WHERE {$column} {$operator} ?";
+
+            $this->data[] = $value;
+        } else {
+            $this->sql .= " AND {$column} {$operator} ?";
+            $this->data[] = $value;
+        }
+
+        //$value = $this->connection->real_escape_string($value);
+
+
+        //$this->query($sql, [$value], 's');
+
+        return $this;
+    }
+
+
+    public function orderBy($column, $order = 'ASC')
+    {
+
+        if (empty($this->orderBy)) {
+            $this->orderBy = " ORDER BY {$column} {$order}";
+        } else {
+            $this->orderBy .= ", {$column} {$order}";
+        }
+
+
+
+        return $this;
+    }
+
     public function first()
     {
+        if (empty($this->query)) {
+
+            if (empty($this->sql)) {
+                $this->sql = "SELECT * FROM {$this->table}";
+            }
+
+            $this->sql .= $this->orderBy;
+            $this->query($this->sql, $this->data, $this->params);
+        }
+
+        
+        /*  if (empty($this->query)) {
+            $this->query($this->sql, $this->data, $this->params);
+        } */
+       
         return $this->query->fetch_assoc();
     }
 
     public function get()
     {
+        if (empty($this->query)) {
+
+
+            if (empty($this->sql)) {
+
+                $this->sql = "SELECT * FROM {$this->table}";
+            }
+
+
+            //   $this->sql = "SELECT * FROM {$this->table}";
+            $this->sql .= $this->orderBy;
+
+            //die($this->sql);
+            $this->query($this->sql, $this->data, $this->params);
+        }
+
+        //   die($this->sql);
+        //$this->query($this->sql, $this->data, $this->params);
 
         return $this->query->fetch_all(MYSQLI_ASSOC);
     }
 
-    public function paginate($count = 15){
+    public function paginate($count = 15)
+    {
+        $page = isset($_GET['page']) ? $_GET['page'] : 1;
 
-        $page = isset($_GET['page'])? $_GET['page']: 1;
 
-        $sql = "SELECT * FROM {$this->table} LIMIT " . ($page -1) * $count .",{$count}";
+        if ($this->sql) {
 
-        return $this->query($sql)->get();
+            $sql = $this->sql . ($this->orderBy?? '') . " LIMIT " . ($page - 1) * $count . ",{$count}";
+            $data = $this->query($sql, $this->data, $this->params)->get();
+       
+        } else {
+             $sql = "SELECT SQL_CALC_FOUND_ROWS * FROM {$this->table} ". ($this->orderBy?? '')  ." LIMIT " . ($page - 1) * $count . ",{$count}";
+        
+            $data = $this->query($sql)->get();
+        }
+
+        $total = $this->query('SELECT FOUND_ROWS() as total')->first()['total'];
+
+        $uri = $_SERVER['REQUEST_URI'];
+
+        $uri = trim($uri, '/');
+
+        if (strpos($uri, '?')) {
+            $uri = substr($uri, 0, strpos($uri, '?'));
+        }
+
+        $last_page = ceil($total / $count);
+
+
+        return [
+            'total'          => $total,
+            'from'           => ($page - 1) * $count + 1,
+            'to'             => ($page - 1) * $count + count($data),
+            'current_page'   => $page,
+            'last_page'      => $last_page,
+            'next_page_url'  => $page < $last_page ? '/' . $uri . '?page=' . $page + 1 : null,
+            'prev_page_url'  => $page > 1 ? '/' . $uri . '?page=' . $page - 1 : null,
+            'data'           => $data,
+        ];
     }
 
     // Consultas
@@ -92,23 +203,6 @@ class Model
         return $this->query($sql, [$id], 'i')->first();
     }
 
-    public function where($column, $operator, $value = null)
-    {
-
-        if ($value == null) {
-
-            $value = $operator;
-            $operator = '=';
-        }
-
-        //$value = $this->connection->real_escape_string($value);
-
-        $sql = "SELECT * FROM {$this->table} WHERE {$column} {$operator} ?";
-
-        $this->query($sql, [$value], 's');
-
-        return $this;
-    }
 
     public function create($data)
     {

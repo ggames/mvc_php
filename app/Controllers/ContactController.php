@@ -4,27 +4,36 @@ namespace App\Controllers;
 
 use App\Models\Contact;
 
-class ContactController extends Controller {
-   
-    public function index() {  
+class ContactController extends Controller
+{
+
+    public function index()
+    {
 
         $model = new Contact();
 
-        $contacts = $model->paginate(3);
+         return $model->orderBy('id','DESC')
+                     ->paginate(3);
+                    // ->first();
+ 
+        if (isset($_GET['search'])) {
+            $contacts = $model->where('name','LIKE','%'.$_GET['search'].'%')->paginate(1);
+        } else {
+            $contacts = $model->paginate(3);
+        }
 
-        return $contacts;
-        //$contacts = $model->all();
+        //$contacts = $model->paginate(3)
 
         return  $this->view('contacts.index', compact('contacts'));
     }
 
-    public function create() {
-
-     
+    public function create()
+    {
         return $this->view('contacts.create');
     }
 
-    public function store() {
+    public function store()
+    {
 
         $data = $_POST;
 
@@ -34,10 +43,10 @@ class ContactController extends Controller {
 
         //header('Location: /contacts');
         $this->redirect('/contacts');
-
     }
 
-    public function show($id) {
+    public function show($id)
+    {
 
         $model = new Contact();
         $contact = $model->find($id);
@@ -45,33 +54,34 @@ class ContactController extends Controller {
         return $this->view('contacts.show', compact('contact'));
     }
 
-    public function edit($id) {
+    public function edit($id)
+    {
 
         $model = new Contact();
         $contact = $model->find($id);
 
         return $this->view('contacts.edit', compact('contact'));
-
     }
 
-    public function update($id) {
-        
+    public function update($id)
+    {
+
         $data = $_POST;
 
         $model = new Contact;
 
         $model->update($id, $data);
 
-        $this->redirect("/contacts/{$id}");      
+        $this->redirect("/contacts/{$id}");
     }
 
-    public function destroy($id) {
-       
+    public function destroy($id)
+    {
+
         $model = new Contact();
 
         $model->delete($id);
 
         $this->redirect("/contacts");
     }
-
 }
